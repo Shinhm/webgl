@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+    <style>
+        @import url("https://webglfundamentals.org/webgl/resources/webgl-tutorials.css");
+        body {
+            margin: 0;
+        }
+        canvas {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+
+    </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+</body>
+<script id="2d-vertex-shader" type="notjs">
+
+  // Attribute는 Buffer로부터 데이터를 받습니다.
+  attribute vec4 a_position;
+
+  // 모든 shader는 main 함수를 가지고 있습니다.
+  void main() {
+
+    // gl_Position은 Vertex Shader가 설정을 담당하는 특수 변수입니다.
+    gl_Position = a_position;
+  }
+
+</script>
+
+<script id="2d-fragment-shader" type="notjs">
+
+  // Fragment Shader는 기본 정밀도를 가지고 있지 않기 때문에 하나를 선언해야 합니다.
+  // mediump(중간 정도 정밀도)은 기본값으로 좋습니다.
+  precision mediump float;
+
+  void main() {
+    // gl_FragColor는 Fragment Shader의 설정을 담당하는 특수 변수입니다.
+    gl_FragColor = vec4(1, 0, 0.5, 1); // 붉은-보라색 반환
+  }
+
+</script>
+<script src="https://webglfundamentals.org/webgl/resources/webgl-utils.js"></script>
+<script>
+    "use strict";
+
+    function createShader(gl, type, source) {
+        var shader = gl.createShader(type);
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+        if (success) {
+            return shader;
+        }
+
+        console.log(gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+    }
+
+    function createProgram(gl, vertexShader, fragmentShader) {
+        var program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        var success = gl.getProgramParameter(program, gl.LINK_STATUS);
+        if (success) {
+            return program;
+        }
+
+        console.log(gl.getProgramInfoLog(program));
+        gl.deleteProgram(program);
+    }
+
+    function main() {
+        var canvas = document.getElementById("c");
+        var gl = canvas.getContext("webgl");
+        console.log(gl);
+        if (!gl) {
+            return;
+        }
+
+        var vertexShaderSource = document.getElementById("2d-vertex-shader").text;
+        var fragmentShaderSource = document.getElementById("2d-fragment-shader").text;
+
+        var vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+        var fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+
+        // Link the two shaders into a program
+        var program = createProgram(gl, vertexShader, fragmentShader);
+
+        var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+
+        var positionBuffer = gl.createBuffer();
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+        var positions = [
+            -0.3, -0.3,
+            -0.3, 0.7,
+            0.7, -0.3,
+        ];
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+        webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        gl.useProgram(program);
+
+        gl.enableVertexAttribArray(positionAttributeLocation);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+        // attribute에게 positionBuffer의 데이터를 어떻게 꺼낼지 지시 (ARRAY_BUFFER)
+        var size = 2;          // 실행될 때마다 2개 구성 요소 사용
+        var type = gl.FLOAT;   // 데이터는 32bit 소수점
+        var normalize = false; // 정규화되지 않은 데이터
+        var stride = 0;        // 0 = 반복할 때마다 size * sizeof(type)만큼 다음 위치로 이동
+        var offset = 0;        // buffer 시작점
+        gl.vertexAttribPointer(
+            positionAttributeLocation,
+            size,
+            type,
+            normalize,
+            stride,
+            offset
+        );
+
+        // draw
+        var primitiveType = gl.TRIANGLES;
+        var offset = 0;
+        var count = 3;
+        gl.drawArrays(primitiveType, offset, count);
+    }
+
+    main();
+
+</script>
+
+</html>
